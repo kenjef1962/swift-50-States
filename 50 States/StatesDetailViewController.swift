@@ -33,29 +33,42 @@ class StatesDetailViewController: UIViewController, UITableViewDataSource, UITab
     }
     
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        return (section == 0) ? "State Name" : "State Symbols"
+        return (section == 0) ? "State Info" : "State Symbols"
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return (section == 0) ? 1 : state.symbols.count
+        return (section == 0) ? 2 : state.symbols.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "infoCell") else { return UITableViewCell() }
         
         if ((indexPath as NSIndexPath).section == 0) {
-            cell.textLabel!.text = "\(state.name) (\(state.abbreviation))"
-            cell.detailTextLabel!.text = state.nickname
+            if indexPath.row == 0 {
+                cell.textLabel!.text = "\(state.name) (\(state.abbreviation))"
+                cell.detailTextLabel!.text = state.nickname
+
+                cell.imageView!.contentMode = .center
+                cell.imageView!.image = UIImage(named: "loading")
+                
+                state.getImage(StateImageType.map, imageSize: .small) { image in
+                    cell.imageView!.image = image
+                }
+            }
+            else {
+                cell.textLabel!.text = "Admitted to the Union"
+                cell.detailTextLabel!.text = "\(state.admissionDate) (\(state.admissionOrder))"
+            }
         }
         else {
             let symbol = state.symbols[(indexPath as NSIndexPath).row]
             
-            if ((indexPath as NSIndexPath).row < 3) {
-                cell.accessoryType = .detailButton
+            if indexPath.row < 3 {
+                cell.accessoryType = .disclosureIndicator
                 cell.imageView!.contentMode = .center
                 cell.imageView!.image = UIImage(named: "loading")
                 
-                state.getImage(symbols[(indexPath as NSIndexPath).row], imageSize: .small) { image in
+                state.getImage(symbols[indexPath.row], imageSize: .small) { image in
                     cell.imageView!.image = image
                 }
             }
@@ -63,17 +76,29 @@ class StatesDetailViewController: UIViewController, UITableViewDataSource, UITab
                 cell.accessoryType = .detailButton
             }
 
-            cell.textLabel!.text = symbol.name ?? symbol.type
-            cell.detailTextLabel!.text = symbol.name != nil ? symbol.type : ""
+            cell.textLabel!.text = symbol.type
+            cell.detailTextLabel!.text = symbol.name
         }
         
         return cell
     }
     
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if ((indexPath as NSIndexPath).section != 0) {
+            showDetails(at: indexPath)
+        }
+    }
+    
     func tableView(_ tableView: UITableView, accessoryButtonTappedForRowWith indexPath: IndexPath) {
-        let symbol = state.symbols[(indexPath as NSIndexPath).row]
+        if ((indexPath as NSIndexPath).section != 0) {
+            showDetails(at: indexPath)
+        }
+    }
+    
+    func showDetails(at indexPath: IndexPath) {
+        let symbol = state.symbols[indexPath.row]
         
-        if ((indexPath as NSIndexPath).row < 3) {
+        if indexPath.row < 3 {
             if let imageDetailVC = storyboard?.instantiateViewController(withIdentifier: "imageDetailViewController") as? ImageDetailViewController {
                 let bounds = view.frame.size
                 let width = bounds.width * 0.75
@@ -84,7 +109,7 @@ class StatesDetailViewController: UIViewController, UITableViewDataSource, UITab
                 imageDetailVC.preferredContentSize = CGSize(width: cxy, height: cxy)
                 imageDetailVC.modalPresentationStyle = UIModalPresentationStyle.formSheet
                 
-                self.present(imageDetailVC, animated: true, completion: nil)
+                self.show(imageDetailVC, sender: self)
             }
         }
         else {

@@ -19,7 +19,8 @@ class ImageDetailViewController: UIViewController {
     
     func setup(_ state: State, symbolType: String) {
         self.state = state
-
+        self.title = symbolType
+        
         for symbol in state.symbols {
             if (symbol.type == symbolType) {
                 self.symbol = symbol
@@ -41,7 +42,7 @@ class ImageDetailViewController: UIViewController {
         
         if let imageType = StateImageType(rawValue: symbol.type.lowercased()) {
             state.getImage(imageType, imageSize: .large) { image in
-                self.symbolImageView.contentMode = .scaleAspectFit
+                self.symbolImageView.contentMode = .center
                 self.symbolImageView.image = image
             }
         }

@@ -68,7 +68,9 @@ class StatesTableViewController: UIViewController, UITableViewDataSource, UITabl
         if let stateDetailVC = self.storyboard?.instantiateViewController(withIdentifier: "statesDetailViewController") as? StatesDetailViewController {
             stateDetailVC.setup(state)
             
-            navigationController?.pushViewController(stateDetailVC, animated: true)
+            show(stateDetailVC, sender: self)
+            
+            //navigationController?.pushViewController(stateDetailVC, animated: true)
         }
     }
 }

@@ -38,6 +38,8 @@ class State {
     var name: String
     var abbreviation: String
     var nickname: String
+    var admissionDate: String
+    var admissionOrder: String
     
     var symbols = [(type: String, name: String?, description: String?)]()
     
@@ -45,6 +47,8 @@ class State {
         name = json["name"].string ?? "[missing]"
         abbreviation = json["name-abbreviation"].string ?? "[missing]"
         nickname = json["name-nickname"].string ?? "[missing]"
+        admissionDate = json["admission-date"].string ?? "[missing]"
+        admissionOrder = json["admission-order"].string ?? "[missing]"
         
         symbols.append(("Flag", nil, json["desc-flag"].string ?? nil))
         symbols.append(("Seal", nil, json["desc-seal"].string ?? nil))
