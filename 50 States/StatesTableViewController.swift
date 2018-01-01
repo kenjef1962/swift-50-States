@@ -8,38 +8,44 @@
 
 import UIKit
 
-class StatesTableViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+class StatesTableViewController: UIViewController  {
 
     @IBOutlet weak var statesTableView: UITableView!
 
-
     fileprivate var states: [State]!
-    fileprivate var defaultImageType = StateImageType.flag
+    fileprivate var imageType = Settings.listImageType
     
+    static let identifier = "statesTableViewController"
+}
+
+// MARK: --
+// MARK: Life Cycle Methods
+extension StatesTableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        statesTableView.dataSource = self
-        statesTableView.delegate = self
-        
         states = DataManager.instance.getStateList()
+        
+        statesTableView.layer.borderColor = UIColor.lightGray.cgColor
+        statesTableView.layer.borderWidth = 0.25
+        statesTableView.layoutMargins = .zero
+        statesTableView.separatorInset = .zero
+        statesTableView.tableFooterView = UIView()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        if defaultImageType != Utils.defaultImageType {
+        if imageType != Settings.listImageType {
+            imageType = Settings.listImageType
             statesTableView.reloadData()
         }
     }
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        
-        defaultImageType = Utils.defaultImageType
-    }
-    
-    // MARK: --
-    // MARK: Data Source Methods
+}
+
+// MARK: --
+// MARK: Data Source Methods
+extension StatesTableViewController: UITableViewDataSource {
     func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
@@ -49,29 +55,24 @@ class StatesTableViewController: UIViewController, UITableViewDataSource, UITabl
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let state = states[(indexPath as NSIndexPath).row]
-
-        if let cell = tableView.dequeueReusableCell(withIdentifier: "statesCell") as? StatesTableViewCell {
-            cell.setup(Utils.defaultImageType, state: state)
-            
-            return cell
-        }
+        guard let reusableCell = tableView.dequeueReusableCell(withIdentifier: StatesTableViewCell.cellIdentifier) else { fatalError() }
+        guard let cell = reusableCell as? StatesTableViewCell else { fatalError() }
         
-        return UITableViewCell()
+        cell.configure(imageType: imageType, state: states[indexPath.row])
+        
+        return cell
     }
-    
-    // MARK: --
-    // MARK: Delegate Methods
+}
+
+// MARK: --
+// MARK: Delegate Methods
+extension StatesTableViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let state = states[(indexPath as NSIndexPath).row]
+        guard let vc = self.storyboard?.instantiateViewController(withIdentifier: StatesDetailViewController.identifier) else { fatalError() }
+        guard let detailVC = vc as? StatesDetailViewController else { fatalError() }
         
-        if let stateDetailVC = self.storyboard?.instantiateViewController(withIdentifier: "statesDetailViewController") as? StatesDetailViewController {
-            stateDetailVC.setup(state)
-            
-            show(stateDetailVC, sender: self)
-            
-            //navigationController?.pushViewController(stateDetailVC, animated: true)
-        }
+        detailVC.configure(state: states[indexPath.row])
+        show(detailVC, sender: self)
     }
 }
 

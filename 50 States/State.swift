@@ -8,88 +8,62 @@
 
 import Foundation
 import UIKit
-import Alamofire
-import AlamofireImage
+
 import SwiftyJSON
 
-enum StateImageSize: String {
-    case small = "small"
-    case large = "large"
-    
-    var stringValue: String {
-        return self.rawValue
-    }
-}
 
-enum StateImageType: String {
-    case flag = "flag"
-    case map = "map"
-    case seal = "seal"
-    case quarter = "quarter"
-    
-    var stringValue: String {
-        return self.rawValue
-    }
-}
-
-class State {
-    fileprivate var imageCache: [String: UIImage] = [:]
-    
+struct State {
     var name: String
     var abbreviation: String
     var nickname: String
-    var admissionDate: String
-    var admissionOrder: String
+    var capitalCity: String?
+    var largestCity: String?
+    var mapLatitude: String?
+    var mapLongitude: String?
     
-    var symbols = [(type: String, name: String?, description: String?)]()
+    var items = [InfoItem]()
     
-    init(json: JSON) {
-        name = json["name"].string ?? "[missing]"
-        abbreviation = json["name-abbreviation"].string ?? "[missing]"
-        nickname = json["name-nickname"].string ?? "[missing]"
-        admissionDate = json["admission-date"].string ?? "[missing]"
-        admissionOrder = json["admission-order"].string ?? "[missing]"
-        
-        symbols.append(("Flag", nil, json["desc-flag"].string ?? nil))
-        symbols.append(("Seal", nil, json["desc-seal"].string ?? nil))
-        symbols.append(("Quarter", json["symbol-quarter"].string ?? nil, json["desc-quarter"].string ?? nil))
-        
-        symbols.append(("Bird", json["symbol-bird"].string ?? nil, json["desc-bird"].string ?? nil))
-        symbols.append(("Flower", json["symbol-flower"].string ?? nil, json["desc-flower"].string ?? nil))
-        symbols.append(("Tree", json["symbol-tree"].string ?? nil, json["desc-tree"].string ?? nil))
-        symbols.append(("Song", json["symbol-song"].string ?? nil, json["desc-song"].string ?? nil))
-    }
+    init?(json: JSON) {
+        guard let name = json["name"].string else { return nil }
+        guard let abbreviation = json["name-abbreviation"].string else { return nil }
+        guard let nickname = json["name-nickname"].string else { return nil }
 
-    fileprivate func getImagePath(_ imageType: StateImageType, imageSize: StateImageSize) -> String {
-        var imagePath = "http://www.50states.com/images/redesign/\(imageType.stringValue)s/"
+        self.name = name
+        self.abbreviation = abbreviation
+        self.nickname = nickname
         
-        switch imageType {
-        case .quarter:
-            imagePath += "\(name)_\(imageSize.stringValue)_\(imageType.stringValue).png"
-            break
-        default:
-            imagePath += "\(abbreviation)-\(imageSize.stringValue)\(imageType.stringValue).png"
-            break
+        capitalCity = json["city-capital"].string
+        largestCity = json["city-largest"].string
+
+        mapLatitude = json["map-latitude"].string
+        mapLongitude = json["map-longitude"].string
+        
+        items.append(InfoItem(json: json, type: .admission, valueKey: "admission", descriptionKey: "admission-desc"))
+        items.append(InfoItem(json: json, type: .bird, valueKey: "bird", descriptionKey: "bird-desc"))
+        items.append(InfoItem(json: json, type: .flag, valueKey: "flag", descriptionKey: "flag-desc"))
+        items.append(InfoItem(json: json, type: .flower, valueKey: "flower", descriptionKey: "flower-desc"))
+        items.append(InfoItem(json: json, type: .map, valueKey: "map", descriptionKey: "map-desc"))
+        items.append(InfoItem(json: json, type: .quarter, valueKey: "quarter", descriptionKey: "quarter-desc"))
+        items.append(InfoItem(json: json, type: .seal, valueKey: "seal", descriptionKey: "seal-desc"))
+        items.append(InfoItem(json: json, type: .song, valueKey: "song", descriptionKey: "song-desc"))
+        items.append(InfoItem(json: json, type: .tree, valueKey: "tree", descriptionKey: "tree-desc"))
+    }
+}
+
+struct InfoItem {
+    var type: InfoType
+    var value: String?
+    var description: String?
+    
+    init(json: JSON, type: InfoType, valueKey: String?, descriptionKey: String?) {
+        self.type = type
+        
+        if let valueKey = valueKey {
+            self.value = json[valueKey].string
         }
         
-        return imagePath.replacingOccurrences(of: " ", with: "_").lowercased()
-    }
-
-    func getImage(_ imageType: StateImageType, imageSize: StateImageSize, completion: @escaping (UIImage?) -> Void) {
-        let key = "\(imageType.stringValue)-\(imageSize.stringValue)"
-        
-        if let image = imageCache[key] {
-            return completion(image)
-        }
-        
-        let imagePath = getImagePath(imageType, imageSize: imageSize)
-        guard let imageURL = URL(string: imagePath) else { return completion(nil) }
-        
-        Alamofire.request(imageURL, method: .get).responseImage { response in
-            guard let image = response.result.value else { return completion(nil) }
-
-            self.imageCache[key] = image
-            return completion(image)
+        if let descriptionKey = descriptionKey {
+            self.description = json[descriptionKey].string
         }
     }
 }

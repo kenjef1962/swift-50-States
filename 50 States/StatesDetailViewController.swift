@@ -8,120 +8,102 @@
 
 import UIKit
 
-class StatesDetailViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UIPopoverPresentationControllerDelegate {
+class StatesDetailViewController: UIViewController {
 
-    @IBOutlet weak var stateInfoTableView: UITableView!
+    @IBOutlet weak var stateHeaderView: UIView!
+    @IBOutlet weak var stateNameLabel: UILabel!
+    @IBOutlet weak var stateNicknameLabel: UILabel!
+    @IBOutlet weak var stateCapitalLabel: UILabel!
+    @IBOutlet weak var stateLargestCityLabel: UILabel!
+
+    @IBOutlet weak var infoTableView: UITableView!
     
     var state: State!
-    var symbols: [StateImageType] = [.flag, .seal, .quarter]
     
-    func setup(_ state: State)
+    static let identifier = "statesDetailViewController"
+    
+    func configure(state: State)
     {
         self.state = state
     }
-    
+}
+
+// MARK: --
+// MARK: Life Cycle Methods
+extension StatesDetailViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
         title = state.name
-        stateInfoTableView.dataSource = self
-        stateInfoTableView.delegate = self
+        
+        stateHeaderView.roundCorners()
+        stateNameLabel.text = state.name
+        stateNameLabel.roundCorners(radius: 5)
+        stateNicknameLabel.text = state.nickname
+        stateCapitalLabel.text = state.capitalCity
+        stateLargestCityLabel.text = state.largestCity
+        
+        infoTableView.layer.borderColor = UIColor.lightGray.cgColor
+        infoTableView.layer.borderWidth = 0.25
+        infoTableView.layoutMargins = .zero
+        infoTableView.separatorInset = .zero
+        infoTableView.tableFooterView = UIView()
     }
-    
+}
+
+// MARK: --
+// MARK: Data Source Methods
+extension StatesDetailViewController: UITableViewDataSource {
     func numberOfSections(in tableView: UITableView) -> Int {
-        return 2
-    }
-    
-    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        return (section == 0) ? "State Info" : "State Symbols"
+        return 1
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return (section == 0) ? 2 : state.symbols.count
+        return state.items.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: "infoCell") else { return UITableViewCell() }
+        guard let reusableCell = infoTableView.dequeueReusableCell(withIdentifier: StatesDetailViewCell.cellIdentifier) else { fatalError() }
+        guard let cell = reusableCell as? StatesDetailViewCell else { fatalError() }
         
-        if ((indexPath as NSIndexPath).section == 0) {
-            if indexPath.row == 0 {
-                cell.textLabel!.text = "\(state.name) (\(state.abbreviation))"
-                cell.detailTextLabel!.text = state.nickname
-
-                cell.imageView!.contentMode = .center
-                cell.imageView!.image = UIImage(named: "loading")
-                
-                state.getImage(StateImageType.map, imageSize: .small) { image in
-                    cell.imageView!.image = image
-                }
-            }
-            else {
-                cell.textLabel!.text = "Admitted to the Union"
-                cell.detailTextLabel!.text = "\(state.admissionDate) (\(state.admissionOrder))"
-            }
-        }
-        else {
-            let symbol = state.symbols[(indexPath as NSIndexPath).row]
-            
-            if indexPath.row < 3 {
-                cell.accessoryType = .disclosureIndicator
-                cell.imageView!.contentMode = .center
-                cell.imageView!.image = UIImage(named: "loading")
-                
-                state.getImage(symbols[indexPath.row], imageSize: .small) { image in
-                    cell.imageView!.image = image
-                }
-            }
-            else if (symbol.description != nil) {
-                cell.accessoryType = .detailButton
-            }
-
-            cell.textLabel!.text = symbol.type
-            cell.detailTextLabel!.text = symbol.name
-        }
+        cell.configure(state: state, infoItem: state.items[indexPath.row] )
         
         return cell
     }
-    
+}
+
+// MARK: --
+// MARK: Delegate Methods
+extension StatesDetailViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if ((indexPath as NSIndexPath).section != 0) {
-            showDetails(at: indexPath)
-        }
+        guard let cell = tableView.cellForRow(at: indexPath) else { fatalError() }
+        guard cell.accessoryType == .disclosureIndicator else { return }
+
+        let infoItem = state.items[indexPath.row]
+
+        guard let vc = storyboard?.instantiateViewController(withIdentifier: ImageDetailViewController.identifier) else { fatalError() }
+        guard let detailVC = vc as? ImageDetailViewController else { fatalError() }
+
+        let bounds = view.frame.size
+        let width = bounds.width * 0.75
+        let height = bounds.height * 0.75
+        let cxy = width <= height ? width : height
+
+        detailVC.configure(state, infoItem: infoItem)
+        detailVC.preferredContentSize = CGSize(width: cxy, height: cxy)
+        detailVC.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .phone ? .fullScreen : .formSheet
+
+        self.present(detailVC, animated: true, completion: nil)
     }
-    
+
     func tableView(_ tableView: UITableView, accessoryButtonTappedForRowWith indexPath: IndexPath) {
-        if ((indexPath as NSIndexPath).section != 0) {
-            showDetails(at: indexPath)
-        }
-    }
-    
-    func showDetails(at indexPath: IndexPath) {
-        let symbol = state.symbols[indexPath.row]
-        
-        if indexPath.row < 3 {
-            if let imageDetailVC = storyboard?.instantiateViewController(withIdentifier: "imageDetailViewController") as? ImageDetailViewController {
-                let bounds = view.frame.size
-                let width = bounds.width * 0.75
-                let height = bounds.height * 0.75
-                let cxy = width <= height ? width : height
-                
-                imageDetailVC.setup(state, symbolType: symbol.type)
-                imageDetailVC.preferredContentSize = CGSize(width: cxy, height: cxy)
-                imageDetailVC.modalPresentationStyle = UIModalPresentationStyle.formSheet
-                
-                self.show(imageDetailVC, sender: self)
-            }
-        }
-        else {
-            let title = "State \(symbol.type) of \(state.name)"
-            
-            var message = symbol.name ?? ""
-            if (message != "") {
-                message += "\n\n"
-            }
-            message += symbol.description ?? ""
-            
-            Utils.showBasicAlert(title, message: message, viewController: self, completion: nil)
-        }
+        let infoItem = state.items[indexPath.row]
+        let title = "State \(infoItem.type.stringValue) of \(state.name)"
+
+        var message = infoItem.value ?? ""
+        message += !message.isEmpty ? "\n\n" : ""
+        message += infoItem.description ?? ""
+
+        UIAlertController.showBasicAlert(title, message: message, viewController: self, completion: nil)
     }
 }

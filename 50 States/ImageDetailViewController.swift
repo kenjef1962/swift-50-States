@@ -13,38 +13,43 @@ class ImageDetailViewController: UIViewController {
     @IBOutlet weak var symbolImageView: UIImageView!
     @IBOutlet weak var symbolTitleLabel: UILabel!
     @IBOutlet weak var symbolDescriptionLabel: UITextView!
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     
     var state: State!
-    var symbol: (type: String, name: String?, description: String?)!
+    var infoItem: InfoItem!
     
-    func setup(_ state: State, symbolType: String) {
+    static let identifier = "imageDetailViewController"
+    
+    func configure(_ state: State, infoItem: InfoItem) {
         self.state = state
-        self.title = symbolType
-        
-        for symbol in state.symbols {
-            if (symbol.type == symbolType) {
-                self.symbol = symbol
-                break
-            }
-        }
+        self.infoItem = infoItem
     }
-    
+}
+
+// MARK: --
+// MARK: Life Cycle Methods
+extension ImageDetailViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        Utils.roundViewCorners(symbolDescriptionLabel)
+        title = infoItem.type.stringValue
 
-        symbolTitleLabel.text = "State \(symbol.type) of \(state.name)"
-        symbolDescriptionLabel.text = symbol.description ?? ""
+        var description = infoItem.value ?? ""
+        description += !description.isEmpty ? "\n\n" : ""
+        description += infoItem.description ?? ""
+
         
-        symbolImageView.contentMode = .center
-        symbolImageView.image = UIImage(named: "loading")
+        symbolTitleLabel.text = "State \(infoItem.type.stringValue) of \(state.name)"
+        symbolTitleLabel.roundCorners(radius: 5)
+        symbolDescriptionLabel.text = description
+        symbolDescriptionLabel.roundCorners()
+        symbolImageView.image = nil
+
+        activityIndicator.startAnimating()
         
-        if let imageType = StateImageType(rawValue: symbol.type.lowercased()) {
-            state.getImage(imageType, imageSize: .large) { image in
-                self.symbolImageView.contentMode = .center
-                self.symbolImageView.image = image
-            }
+        DataManager.instance.getImage(state: state, imageType: infoItem.type.imageType, imageSize: .large) { image in
+            self.symbolImageView.image = image
+            self.activityIndicator.stopAnimating()
         }
     }
     
@@ -53,7 +58,11 @@ class ImageDetailViewController: UIViewController {
 
         symbolDescriptionLabel.setContentOffset(CGPoint.zero, animated: false)
     }
-    
+}
+
+// MARK: --
+// MARK: IBAction Methods
+extension ImageDetailViewController {
     @IBAction func closeButtonTapped(_ sender: UIButton) {
         dismiss(animated: true, completion: nil)
     }

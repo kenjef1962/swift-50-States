@@ -14,27 +14,27 @@ class StatesTableViewCell: UITableViewCell {
     @IBOutlet weak var cellNameLabel: UILabel!
     @IBOutlet weak var cellNicknameLabel: UILabel!
     @IBOutlet weak var cellAbbreviationLabel: UILabel!
+    @IBOutlet weak var cellActivityIndicator: UIActivityIndicatorView!
     
-    fileprivate var state: State?
+    static let cellIdentifier = "statesCell"
     
-    func setup(_ imageType: StateImageType, state : State)
+    func configure(imageType: ImageType, state : State)
     {
-        self.state = state
+        layoutMargins = .zero
+        preservesSuperviewLayoutMargins = false
         
-        cellImageView.image = UIImage(named: "loading")
+        cellImageView.image = nil
         cellNameLabel.text = state.name
         cellNicknameLabel.text = state.nickname
+        cellAbbreviationLabel.roundCorners(radius: cellAbbreviationLabel.frame.width / 2)
         cellAbbreviationLabel.text = state.abbreviation
+        cellActivityIndicator.startAnimating()
         
-        state.getImage(imageType, imageSize: .small) { image in
-            self.cellImageView.image = image
+        DataManager.instance.getImage(state: state, imageType: imageType, imageSize: .small) { image in
+            DispatchQueue.main.async {
+                self.cellImageView.image = image
+                self.cellActivityIndicator.stopAnimating()
+            }
         }
-    }
-    
-    override func prepareForReuse() {
-        cellImageView.image = nil
-        cellNameLabel.text = nil
-        cellNicknameLabel.text = nil
-        cellAbbreviationLabel.text = nil
     }
 }

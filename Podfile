@@ -1,12 +1,8 @@
 use_frameworks!
 
 target '50 States' do
-pod 'Alamofire', '4.5.0'
-pod 'AlamofireImage', '3.2.0'
-pod 'SwiftyJSON', '3.1.4'
-end
-
-target '50 StatesTests' do
-
+pod 'Alamofire', '4.6.0'
+pod 'AlamofireImage', '3.3.0'
+pod 'SwiftyJSON', '4.0.0'
 end
 

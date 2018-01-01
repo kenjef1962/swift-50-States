@@ -12,23 +12,21 @@ class StatesCollectionViewCell: UICollectionViewCell {
     
     @IBOutlet weak var cellImageView: UIImageView!
     @IBOutlet weak var cellNameLabel: UILabel!
+    @IBOutlet weak var cellActivityIndicator: UIActivityIndicatorView!
     
-    fileprivate var state: State?
+    static let cellIdentifier = "statesCell"
     
-    func setup(_ imageType: StateImageType, state : State)
+    func configure(imageType: ImageType, state : State)
     {
-        self.state = state
-        
-        cellImageView.image = UIImage(named: "loading")
-        cellNameLabel.text = state.name
-        
-        state.getImage(imageType, imageSize: .small) { image in
-            self.cellImageView.image = image
-        }
-    }
-    
-    override func prepareForReuse() {
         cellImageView.image = nil
-        cellNameLabel.text = nil
+        cellNameLabel.text = state.name
+        cellActivityIndicator.startAnimating()
+        
+        DataManager.instance.getImage(state: state, imageType: imageType, imageSize: .small) { image in
+            DispatchQueue.main.async {
+                self.cellActivityIndicator.stopAnimating()
+                self.cellImageView.image = image
+            }
+        }
     }
 }
